@@ -4,6 +4,7 @@ var https = require("https");
 var status = {
     earnings: 0,
     patrons: 0,
+    updated: "Never",
 };
 
 http.createServer(function (request, response) {
@@ -42,6 +43,8 @@ function refreshStatus() {
             } else {
                 console.log("total patrons not found");
             }
+
+            status.updated = new Date().toUTCString();
         });
     });
 
