@@ -1,0 +1,9 @@
+{
+    "name": "patreon-watcher",
+    "private": true,
+    "version": "0.0.1",
+    "description": "A simple Node.js app that polls the total earnings and patrons of my Patreon account",
+    "author": "Thorbjørn Lindeijer <bjorn@lindeijer.nl>",
+    "dependencies": {
+    }
+}
