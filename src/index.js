@@ -31,7 +31,7 @@ function refreshStatus() {
         res.on("data", function(chunk) { body += chunk; });
 
         res.on("end", function() {
-            var re = /var totalEarnings[^0-9]*([0-9]+\.[0-9]+)\);/
+            var re = /var totalEarnings[^0-9]*([0-9]+\.?[0-9]*)\);/
             var result = re.exec(body);
             if (result !== null) {
                 status.earnings = parseFloat(result[1]);
