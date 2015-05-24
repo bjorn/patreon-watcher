@@ -20,7 +20,7 @@ console.log('Server running at http://127.0.0.1:80/');
 function refreshStatus() {
     var options = {
         hostname: "www.patreon.com",
-        path: "/bjorn",
+        path: "/bjorn?ty=h",
         rejectUnauthorized: false,
         agent: false,
     };
