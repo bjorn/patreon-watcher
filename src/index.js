@@ -39,7 +39,7 @@ function refreshStatus() {
                 console.log("total earnings not found");
             }
 
-            re = /\$\('#totalPatrons'\)\.text\(([0-9]+)\)/
+            re = /id=\"totalPatrons\"[^0-9]*([0-9]+)/
             result = re.exec(body);
             if (result !== null) {
                 status.patrons = parseFloat(result[1]);
