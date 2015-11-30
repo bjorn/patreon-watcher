@@ -19,8 +19,8 @@ console.log('Server running at http://127.0.0.1:80/');
 
 function refreshStatus() {
     var options = {
-        hostname: "www.patreon.com",
-        path: "/bjorn?ty=h",
+        hostname: "api.patreon.com",
+        path: "/user/90066",
         rejectUnauthorized: false,
         agent: false,
     };
@@ -31,22 +31,10 @@ function refreshStatus() {
         res.on("data", function(chunk) { body += chunk; });
 
         res.on("end", function() {
-            var re = /var totalEarnings[^0-9]*([0-9]+\.?[0-9]*)\);/
-            var result = re.exec(body);
-            if (result !== null) {
-                status.earnings = parseFloat(result[1]);
-            } else {
-                console.log("total earnings not found");
-            }
+            var json = JSON.parse(body);
 
-            re = /id=\"totalPatrons\"[^0-9]*([0-9]+)/
-            result = re.exec(body);
-            if (result !== null) {
-                status.patrons = parseFloat(result[1]);
-            } else {
-                console.log("total patrons not found");
-            }
-
+            status.earnings = json.linked[0].pledge_sum / 100;
+            status.patrons = json.linked[0].patron_count;
             status.updated = new Date().toUTCString();
         });
     });
