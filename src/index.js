@@ -1,5 +1,8 @@
 var http = require("http");
 var https = require("https");
+var url = require('url');
+
+var port = 80;
 
 var status = {
     earnings: 0,
@@ -8,14 +11,33 @@ var status = {
 };
 
 http.createServer(function (request, response) {
-    response.writeHead(200, {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-    });
-    response.end(JSON.stringify(status));
-}).listen(80);
+    var pathname = url.parse(request.url).pathname;
 
-console.log('Server running at http://127.0.0.1:80/');
+    if (pathname == '/on_create' ||
+        pathname == '/on_update' ||
+        pathname == '/on_delete')
+    {
+        // A pledge was created, updated or deleted
+        refreshStatus();
+        response.writeHead(200);
+        response.end('OK');
+    }
+    else if (pathname == '/')
+    {
+        response.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        response.end(JSON.stringify(status));
+    }
+    else
+    {
+        response.writeHead(404);
+        response.end();
+    }
+}).listen(port);
+
+console.log('Server running at http://127.0.0.1:' + port + '/');
 
 function refreshStatus() {
     var options = {
