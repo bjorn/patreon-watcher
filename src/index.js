@@ -4,6 +4,8 @@ var url = require('url');
 
 var port = 80;
 
+var refreshTimeout = null;
+
 var status = {
     earnings: 0,
     patrons: 0,
@@ -18,9 +20,17 @@ http.createServer(function (request, response) {
         pathname == '/on_delete')
     {
         // A pledge was created, updated or deleted
-        refreshStatus();
-        response.writeHead(200);
-        response.end('OK');
+        if (!refreshTimeout) {
+            refreshStatus();
+            response.writeHead(200);
+            response.end('Refreshing');
+
+            // Don't refresh for ten seconds
+            refreshTimeout = setTimeout(function() { refreshTimeout = null }, 10 * 1000)
+        } else {
+            response.writeHead(200);
+            response.end('Ignored');
+        }
     }
     else if (pathname == '/')
     {
