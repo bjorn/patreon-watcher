@@ -53,11 +53,15 @@ function refreshStatus() {
         res.on("data", function(chunk) { body += chunk; });
 
         res.on("end", function() {
-            var json = JSON.parse(body);
+            try {
+                var json = JSON.parse(body);
 
-            status.earnings = json.linked[0].pledge_sum / 100;
-            status.patrons = json.linked[0].patron_count;
-            status.updated = new Date().toUTCString();
+                status.earnings = json.linked[0].pledge_sum / 100;
+                status.patrons = json.linked[0].patron_count;
+                status.updated = new Date().toUTCString();
+            } catch (err) {
+                console.log(err);
+            }
         });
     });
 
