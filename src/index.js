@@ -49,6 +49,16 @@ http.createServer(function (request, response) {
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
 
+function findObject(linked, type, id) {
+    for (i = 0; i < linked.length; ++i) {
+        var object = linked[i]
+        if (object.type == type && object.id == id) {
+            return object;
+        }
+    }
+    return null;
+}
+
 function refreshStatus() {
     var options = {
         hostname: "api.patreon.com",
@@ -66,8 +76,15 @@ function refreshStatus() {
             try {
                 var json = JSON.parse(body);
 
-                status.earnings = json.linked[0].pledge_sum / 100;
-                status.patrons = json.linked[0].patron_count;
+                var campaignId = json.data.links.campaign.id;
+                var campaign = findObject(json.linked, "campaign", campaignId)
+
+                var secondGoalId = campaign.links.goals.ids[1];
+                var secondGoal = findObject(json.linked, "goal", secondGoalId)
+
+                status.earnings = campaign.pledge_sum / 100;
+                status.patrons = campaign.patron_count;
+                status.next_goal = secondGoal.amount / 100;
                 status.updated = new Date().toUTCString();
             } catch (err) {
                 console.log(err);
