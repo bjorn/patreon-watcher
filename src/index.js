@@ -49,10 +49,10 @@ http.createServer(function (request, response) {
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
 
-function findObject(linked, type, id) {
-    for (i = 0; i < linked.length; ++i) {
-        var object = linked[i]
-        if (object.type == type && object.id == id) {
+function findObject(included, data) {
+    for (i = 0; i < included.length; ++i) {
+        var object = included[i]
+        if (object.type == data.type && object.id == data.id) {
             return object;
         }
     }
@@ -76,15 +76,12 @@ function refreshStatus() {
             try {
                 var json = JSON.parse(body);
 
-                var campaignId = json.data.links.campaign.id;
-                var campaign = findObject(json.linked, "campaign", campaignId)
+                var campaign = findObject(json.included, json.data.relationships.campaign.data)
+                var secondGoal = findObject(json.included, campaign.relationships.goals.data[1])
 
-                var secondGoalId = campaign.links.goals.ids[1];
-                var secondGoal = findObject(json.linked, "goal", secondGoalId)
-
-                status.earnings = campaign.pledge_sum / 100;
-                status.patrons = campaign.patron_count;
-                status.next_goal = secondGoal.amount / 100;
+                status.earnings = campaign.attributes.pledge_sum / 100;
+                status.patrons = campaign.attributes.patron_count;
+                status.next_goal = secondGoal.attributes.amount / 100;
                 status.updated = new Date().toUTCString();
             } catch (err) {
                 console.log(err);
