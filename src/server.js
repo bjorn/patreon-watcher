@@ -10,6 +10,12 @@ var status = {
     earnings: 0,
     patrons: 0,
     updated: "Never",
+    liberapayEarnings_Tiled: 0,
+    liberapayPatrons_Tiled: 0,
+    liberapayUpdated_Tiled: "Never",
+    liberapayEarnings_bjorn: 0,
+    liberapayPatrons_bjorn: 0,
+    liberapayUpdated_bjorn: "Never"
 };
 
 http.createServer(function (request, response) {
@@ -38,7 +44,7 @@ http.createServer(function (request, response) {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         });
-        response.end(JSON.stringify(status));
+        response.end(JSON.stringify(status, null, 2));
     }
     else
     {
@@ -59,7 +65,7 @@ function findObject(included, data) {
     return null;
 }
 
-function refreshStatus() {
+function refreshPatreonStatus() {
     // https://api.patreon.com/user/90066
     var options = {
         hostname: "api.patreon.com",
@@ -106,6 +112,46 @@ function refreshStatus() {
     });
 
     req.end();
+}
+
+function refreshLiberapayStatus(account) {
+    // https://liberapay.com/Tiled/public.json
+    var options = {
+        hostname: "liberapay.com",
+        path: "/" + account + "/public.json",
+        rejectUnauthorized: false,
+        agent: false,
+    };
+
+    var req = https.request(options, function(res) {
+        var body = ""
+
+        res.on("data", function(chunk) { body += chunk; });
+
+        res.on("end", function() {
+            try {
+                var json = JSON.parse(body);
+
+                status["liberapayEarnings_" + account] = json.receiving.amount
+                status["liberapayPatrons_" + account] = json.npatrons
+                status["liberapayUpdated_" + account] = new Date().toUTCString();
+            } catch (err) {
+                console.log(err);
+            }
+        });
+    });
+
+    req.on("error", function(e) {
+        console.log("problem with request: " + e.message);
+    });
+
+    req.end();
+}
+
+function refreshStatus() {
+    refreshPatreonStatus();
+    refreshLiberapayStatus("Tiled");
+    refreshLiberapayStatus("bjorn");
 }
 
 // refresh status every 5 minutes (288 times a day)
