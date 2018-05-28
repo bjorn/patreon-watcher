@@ -90,10 +90,8 @@ function refreshPatreonStatus() {
 
                 for (var i = 0; i < goals.length; ++i) {
                     var goal = findObject(json.included, goals[i])
-                    if (goal.attributes.completed_percentage < 100) {
+                    if (goal.attributes.completed_percentage < 100 && (nextGoal === null || nextGoal.attributes.amount_cents > goal.attributes.amount_cents))
                         nextGoal = goal;
-                        break;
-                    }
                 }
 
                 status.earnings = campaign.attributes.pledge_sum / 100;
