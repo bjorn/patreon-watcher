@@ -5,5 +5,7 @@
     "description": "A simple Node.js app that polls the total earnings and patrons of my Patreon account",
     "author": "Thorbjørn Lindeijer <bjorn@lindeijer.nl>",
     "dependencies": {
+        "dotenv": "^16.0.0",
+        "node-fetch": "^2.6.7"
     }
 }
