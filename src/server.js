@@ -89,14 +89,14 @@ async function refreshPatreonStatus() {
     status.updated = new Date().toUTCString();
 }
 
-async function refreshLiberapayStatus(account) {
+async function refreshLiberapayStatus() {
     const req = await fetch(`https://liberapay.com/${process.env.LIBERAPAY_ID}/public.json`);
 
     const res = await req.json();
 
-    status["liberapayEarnings_" + account] = res.receiving.amount
-    status["liberapayPatrons_" + account] = res.npatrons
-    status["liberapayUpdated_" + account] = new Date().toUTCString();
+    status["liberapayEarnings"] = res.receiving.amount
+    status["liberapayPatrons"] = res.npatrons
+    status["liberapayUpdated"] = new Date().toUTCString();
 }
 
 async function refreshGithubSponsors() {
