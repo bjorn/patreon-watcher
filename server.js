@@ -28,6 +28,11 @@ const status = {
         contributors: 0,
         updated: "Never",
     },
+    opencollective: {
+        amount: 0,
+        contributors: 0,
+        updated: "Never",
+    }
 };
 
 http.createServer(function (request, response) {
@@ -117,7 +122,7 @@ async function refreshLiberapay(liberapayId) {
             updated: new Date().toUTCString()
         };
     } catch (err) {
-        console.error("Error refreshing liberapay:");
+        console.error("Error refreshing Liberapay:");
         console.error(err);
     }
 }
@@ -153,6 +158,27 @@ async function refreshGithubSponsors(githubUsername) {
     }
 }
 
+async function refreshOpenCollective(collective) {
+    try {
+        const req = await fetch(`https://opencollective.com/${collective}.json`);
+        const res = await req.json();
+
+        let amount = res.yearlyIncome / 12 / 100;
+        if (res.currency === "EUR") {
+            amount *= eurToUsd;
+        }
+
+        status["opencollective"] = {
+            amount: amount,
+            contributors: res.backersCount,
+            updated: new Date().toUTCString()
+        };
+    } catch (err) {
+        console.error("Error refreshing OpenCollective:");
+        console.error(err);
+    }
+}
+
 function refreshStatus() {
     const promises = [];
 
@@ -168,13 +194,17 @@ function refreshStatus() {
         promises.push(refreshGithubSponsors(process.env.GITHUB_USERNAME));
     }
 
+    if (process.env.OPENCOLLECTIVE_NAME) {
+        promises.push(refreshOpenCollective(process.env.OPENCOLLECTIVE_NAME));
+    }
+
     Promise.all(promises).then(() => {
-        status.totalAmount = status.patreon.amount + status.liberapay.amount + status.github.amount;
-        status.totalContributors = status.patreon.contributors + status.liberapay.contributors + status.github.contributors;
+        status.totalAmount = status.patreon.amount + status.liberapay.amount + status.github.amount + status.opencollective.amount;
+        status.totalContributors = status.patreon.contributors + status.liberapay.contributors + status.github.contributors + status.opencollective.contributors;
         status.updated = new Date().toUTCString();
     });
 }
 
 // refresh status regularly
-setInterval(refreshStatus, 1000 * 60 * (process.env.REFRESH_TIME ?? 5));
+setInterval(refreshStatus, 1000 * 60 * Math.max(1, process.env.REFRESH_TIME ?? 5));
 refreshStatus();
