@@ -134,5 +134,5 @@ function refreshStatus() {
 }
 
 // refresh status every 5 minutes (288 times a day)
-setInterval(refreshStatus, 1000 * 60 * 5);
+setInterval(refreshStatus, 1000 * 60 * process.env.REFRESH_TIME);
 refreshStatus();
