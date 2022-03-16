@@ -66,7 +66,7 @@ function findObject(included, data) {
 }
 
 async function refreshPatreonStatus() {
-    const req = await fetch(process.env.PATREON_URL);
+    const req = await fetch(`https://api.patreon.com/user/${process.env.PATREON_ID}`);
     const res = await req.json();
 
     const campaign = findObject(res.included, res.data.relationships.campaign.data)
@@ -90,7 +90,7 @@ async function refreshPatreonStatus() {
 }
 
 async function refreshLiberapayStatus(account) {
-    const req = await fetch(process.env.LIBERAPAY_URL);
+    const req = await fetch(`https://liberapay.com/${process.env.LIBERAPAY_ID}/public.json`);
 
     const res = await req.json();
 
@@ -103,17 +103,17 @@ async function refreshGithubSponsors() {
 
     const query = `
     query {
-        user(login: "bjorn") {
+        user(login: "${process.env.GITHUB_USERNAME}") {
         ... on Sponsorable {
                 sponsors(first: 10) {
                     totalCount
                 }
             },
-            estimatedNextSponsorsPayoutInCents
+            monthlyEstimatedSponsorsIncomeInCents
         }
     }`
 
-    const req = await fetch(process.env.GITHUB_URL, {
+    const req = await fetch(`https://api.github.com/graphql`, {
         method: 'POST',
         body: JSON.stringify({query}),
         headers: {
@@ -123,7 +123,7 @@ async function refreshGithubSponsors() {
 
     const res = await req.json();
 
-    status['githubIncomeFromSponsors'] = ((res.data.estimatedNextSponsorsPayoutInCents ?? 0) / 100).toFixed(2)
+    status['githubIncomeFromSponsors'] = ((res.data.monthlyEstimatedSponsorsIncomeInCents ?? 0) / 100).toFixed(2)
     status["githubSponsors"] = res.data.user.sponsors.totalCount;
 }
 
