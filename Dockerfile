@@ -1,5 +1,16 @@
+# syntax=docker/dockerfile:1
+
 FROM node:alpine
-CMD ["npm install"]
-COPY src /src
-CMD ["node","/src/server.js"]
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY ["package.json", "package-lock.json", "./"]
+
+RUN npm install --production
+
+COPY . .
+
+CMD ["node", "server.js"]
+
 EXPOSE 80
