@@ -102,19 +102,24 @@ async function refreshPatreon(patreonId) {
 }
 
 async function refreshLiberapay(liberapayId) {
-    const req = await fetch(`https://liberapay.com/${liberapayId}/public.json`);
-    const res = await req.json();
+    try {
+        const req = await fetch(`https://liberapay.com/${liberapayId}/public.json`);
+        const res = await req.json();
 
-    let amount = parseFloat(res.receiving.amount) ?? 0;
-    if (res.receiving.currency === "EUR") {
-        amount *= eurToUsd;
+        let amount = parseFloat(res.receiving.amount) ?? 0;
+        if (res.receiving.currency === "EUR") {
+            amount *= eurToUsd;
+        }
+
+        status["liberapay"] = {
+            amount: amount,
+            contributors: res.npatrons,
+            updated: new Date().toUTCString()
+        };
+    } catch (err) {
+        console.error("Error refreshing liberapay:");
+        console.error(err);
     }
-
-    status["liberapay"] = {
-        amount: amount,
-        contributors: res.npatrons,
-        updated: new Date().toUTCString()
-    };
 }
 
 async function refreshGithubSponsors(githubUsername) {
