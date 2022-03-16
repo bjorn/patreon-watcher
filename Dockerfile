@@ -1,4 +1,6 @@
 FROM node:alpine
+CMD ["npm install"]
 COPY src /src
-EXPOSE  80
-CMD ["node", "/src/server.js"]
+CMD ["npm install"]
+CMD ["node","/src/server.js"]
+EXPOSE 80
