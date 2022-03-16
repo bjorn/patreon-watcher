@@ -129,8 +129,7 @@ async function refreshGithubSponsors() {
 
 function refreshStatus() {
     refreshPatreonStatus();
-    refreshLiberapayStatus("Tiled");
-    refreshLiberapayStatus("bjorn");
+    refreshLiberapayStatus();
     refreshGithubSponsors()
 }
 
