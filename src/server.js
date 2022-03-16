@@ -3,30 +3,37 @@ const url = require('url');
 const fetch = require('node-fetch')
 require('dotenv').config()
 
-const port = process.env.WEB_PORT;
+const port = process.env.WEB_PORT ?? 80;
+const eurToUsd = 1.1;
 
 let refreshTimeout = null;
 
 const status = {
-    earnings: 0,
-    patrons: 0,
+    totalAmount: 0,
+    totalContributors: 0,
     updated: "Never",
-    liberapayEarnings_Tiled: 0,
-    liberapayPatrons_Tiled: 0,
-    liberapayUpdated_Tiled: "Never",
-    liberapayEarnings_bjorn: 0,
-    liberapayPatrons_bjorn: 0,
-    liberapayUpdated_bjorn: "Never",
-    githubSponsors: 0,
-    githubIncomeFromSponsors: 0,
+    patreon: {
+        amount: 0,
+        contributors: 0,
+        updated: "Never",
+        nextGoal: 0,
+    },
+    liberapay: {
+        amount: 0,
+        contributors: 0,
+        updated: "Never",
+    },
+    github: {
+        amount: 0,
+        contributors: 0,
+        updated: "Never",
+    },
 };
 
 http.createServer(function (request, response) {
-    const pathname = url.parse(request.url).pathname;
+    const pledges = ['/on_create', '/on_update', '/on_delete'];
 
-    if (pathname === '/on_create' ||
-        pathname === '/on_update' ||
-        pathname === '/on_delete') {
+    if (pledges.includes(request.url)) {
         // A pledge was created, updated or deleted
         if (!refreshTimeout) {
             refreshStatus();
@@ -41,7 +48,7 @@ http.createServer(function (request, response) {
             response.writeHead(200);
             response.end('Ignored');
         }
-    } else if (pathname === '/') {
+    } else if (request.url === '/') {
         response.writeHead(200, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
@@ -65,8 +72,8 @@ function findObject(included, data) {
     return null;
 }
 
-async function refreshPatreonStatus() {
-    const req = await fetch(`https://api.patreon.com/user/${process.env.PATREON_ID}`);
+async function refreshPatreon(patreonId) {
+    const req = await fetch(`https://api.patreon.com/user/${patreonId}`);
     const res = await req.json();
 
     const campaign = findObject(res.included, res.data.relationships.campaign.data)
@@ -80,30 +87,40 @@ async function refreshPatreonStatus() {
             nextGoal = goal;
     }
 
-    status.earnings = campaign.attributes.pledge_sum / 100;
-    status.patrons = campaign.attributes.patron_count;
+    let amount = campaign.attributes.pledge_sum / 100;
 
-    if (nextGoal)
-        status.next_goal = nextGoal.attributes.amount_cents / 100;
+    if (campaign.attributes.pledge_sum_currency === "EUR") {
+        amount *= eurToUsd;
+    }
 
-    status.updated = new Date().toUTCString();
+    status["patreon"] = {
+        amount: amount,
+        contributors: campaign.attributes.patron_count,
+        updated: new Date().toUTCString(),
+        nextGoal: (nextGoal ? nextGoal.attributes.amount_cents / 100 : 0) * eurToUsd,
+    };
 }
 
-async function refreshLiberapayStatus() {
-    const req = await fetch(`https://liberapay.com/${process.env.LIBERAPAY_ID}/public.json`);
-
+async function refreshLiberapay(liberapayId) {
+    const req = await fetch(`https://liberapay.com/${liberapayId}/public.json`);
     const res = await req.json();
 
-    status["liberapayEarnings"] = res.receiving.amount
-    status["liberapayPatrons"] = res.npatrons
-    status["liberapayUpdated"] = new Date().toUTCString();
+    let amount = parseFloat(res.receiving.amount) ?? 0;
+    if (res.receiving.currency === "EUR") {
+        amount *= eurToUsd;
+    }
+
+    status["liberapay"] = {
+        amount: amount,
+        contributors: res.npatrons,
+        updated: new Date().toUTCString()
+    };
 }
 
-async function refreshGithubSponsors() {
-
+async function refreshGithubSponsors(githubUsername) {
     const query = `
     query {
-        user(login: "${process.env.GITHUB_USERNAME}") {
+        user(login: "${githubUsername}") {
         ... on Sponsorable {
                 sponsors(first: 10) {
                     totalCount
@@ -123,16 +140,36 @@ async function refreshGithubSponsors() {
 
     const res = await req.json();
 
-    status['githubIncomeFromSponsors'] = ((res.data.monthlyEstimatedSponsorsIncomeInCents ?? 0) / 100).toFixed(2)
-    status["githubSponsors"] = res.data.user.sponsors.totalCount;
+    status['github'] = {
+        foo: res.data.user.monthlyEstimatedSponsorsIncomeInCents,
+        amount: ((res.data.user.monthlyEstimatedSponsorsIncomeInCents ?? 0) / 100),
+        contributors: res.data.user.sponsors.totalCount,
+        updated: new Date().toUTCString()
+    }
 }
 
 function refreshStatus() {
-    refreshPatreonStatus();
-    refreshLiberapayStatus();
-    refreshGithubSponsors()
+    const promises = [];
+
+    if (process.env.PATREON_ID) {
+        promises.push(refreshPatreon(process.env.PATREON_ID));
+    }
+
+    if (process.env.LIBERAPAY_ID) {
+        promises.push(refreshLiberapay(process.env.LIBERAPAY_ID));
+    }
+
+    if (process.env.GITHUB_USERNAME) {
+        promises.push(refreshGithubSponsors(process.env.GITHUB_USERNAME));
+    }
+
+    Promise.all(promises).then(() => {
+        status.totalAmount = status.patreon.amount + status.liberapay.amount + status.github.amount;
+        status.totalContributors = status.patreon.contributors + status.liberapay.contributors + status.github.contributors;
+        status.updated = new Date().toUTCString();
+    });
 }
 
-// refresh status every 5 minutes (288 times a day)
-setInterval(refreshStatus, 1000 * 60 * process.env.REFRESH_TIME);
+// refresh status regularly
+setInterval(refreshStatus, 1000 * 60 * (process.env.REFRESH_TIME ?? 5));
 refreshStatus();
