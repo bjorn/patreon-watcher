@@ -151,8 +151,7 @@ async function refreshGithubSponsors(githubUsername) {
     const res = await req.json();
 
     status['github'] = {
-        foo: res.data.user.monthlyEstimatedSponsorsIncomeInCents,
-        amount: ((res.data.user.monthlyEstimatedSponsorsIncomeInCents ?? 0) / 100),
+        amount: (res.data.user.monthlyEstimatedSponsorsIncomeInCents ?? 0) / 100,
         contributors: res.data.user.sponsors.totalCount,
         updated: new Date().toUTCString()
     }
