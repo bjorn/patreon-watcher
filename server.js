@@ -116,6 +116,9 @@ async function refreshLiberapay(liberapayId) {
             amount *= eurToUsd;
         }
 
+        let weeklyToMonthly = 52.0/12;
+        amount *= weeklyToMonthly;
+
         status["liberapay"] = {
             amount: amount,
             contributors: res.npatrons,
