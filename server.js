@@ -4,7 +4,7 @@ const fetch = require('node-fetch')
 require('dotenv').config()
 
 const port = process.env.WEB_PORT ?? 80;
-const eurToUsd = 1.1;
+const eurToUsd = 1.07;
 
 let refreshTimeout = null;
 
@@ -16,7 +16,6 @@ const status = {
         amount: 0,
         contributors: 0,
         updated: "Never",
-        nextGoal: 0,
     },
     liberapay: {
         amount: 0,
@@ -83,15 +82,6 @@ async function refreshPatreon(patreonId) {
 
     const campaign = findObject(res.included, res.data.relationships.campaign.data)
 
-    const goals = campaign.relationships.goals.data;
-    let nextGoal = null;
-
-    for (let i = 0; i < goals.length; ++i) {
-        const goal = findObject(res.included, goals[i])
-        if (goal.attributes.completed_percentage < 100 && (nextGoal === null || nextGoal.attributes.amount_cents > goal.attributes.amount_cents))
-            nextGoal = goal;
-    }
-
     let amount = campaign.attributes.pledge_sum / 100;
 
     if (campaign.attributes.pledge_sum_currency === "EUR") {
@@ -100,9 +90,8 @@ async function refreshPatreon(patreonId) {
 
     status["patreon"] = {
         amount: amount,
-        contributors: campaign.attributes.patron_count,
+        contributors: campaign.attributes.paid_member_count,
         updated: new Date().toUTCString(),
-        nextGoal: (nextGoal ? nextGoal.attributes.amount_cents / 100 : 0) * eurToUsd,
     };
 }
 
