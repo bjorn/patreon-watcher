@@ -1,16 +1,11 @@
-# syntax=docker/dockerfile:1
-
-FROM node:alpine
-ENV NODE_ENV=production
+FROM denoland/deno:latest
 
 WORKDIR /app
 
-COPY ["package.json", "package-lock.json", "./"]
-
-RUN npm install --omit=dev
-
 COPY . .
 
-CMD ["node", "server.js"]
+RUN deno cache server.ts
 
 EXPOSE 80
+
+CMD ["run", "--allow-net", "--allow-read", "--allow-env", "server.ts"]
