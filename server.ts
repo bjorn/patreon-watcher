@@ -150,8 +150,12 @@ async function refreshGithubSponsors(
 
     const res = await req.json();
 
-    if (res.errors) {
-      console.error("GitHub API error:", res.errors);
+    if (!req.ok || res.errors || res.message) {
+      console.error(
+        "GitHub API error:",
+        res.errors ?? res.message,
+        `(HTTP ${req.status})`,
+      );
       return;
     }
 
