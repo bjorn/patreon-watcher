@@ -1,0 +1,6 @@
+# Default-deny: ignore everything in the build context, then allow only the
+# files the image actually needs.
+*
+!server.ts
+!deno.json
+!deno.lock
