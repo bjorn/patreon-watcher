@@ -39,8 +39,11 @@ Supported platforms:
 ## API Endpoints
 
 - `GET /`: Returns JSON with current funding stats
-- `GET /on_create`, `/on_update`, `/on_delete`: Webhook endpoints for Patreon
-  events
+- `POST /patreon_webhook`: Webhook endpoint for Patreon pledge events
+
+When `PATREON_WEBHOOK_SECRET` is set to the webhook's secret, webhook requests
+are verified against their `X-Patreon-Signature` header. When it is not set,
+verification is skipped.
 
 ## Example Response
 

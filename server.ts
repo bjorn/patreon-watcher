@@ -1,8 +1,17 @@
 import "std/dotenv/load.ts";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const env = Deno.env;
 const port = Number(env.get("WEB_PORT")) || 80;
 const eurToUsd = 1.07;
+
+const webhookSecret = env.get("PATREON_WEBHOOK_SECRET");
+
+if (!webhookSecret) {
+  console.warn(
+    "PATREON_WEBHOOK_SECRET is not set, webhook signatures are not verified",
+  );
+}
 
 let refreshTimeout: number | null = null;
 
@@ -192,6 +201,25 @@ async function refreshOpenCollective(collective: string) {
   }
 }
 
+function verifyPatreonSignature(
+  body: Uint8Array,
+  signature: string | null,
+): boolean {
+  if (!webhookSecret) {
+    return true;
+  }
+  if (!signature) {
+    return false;
+  }
+
+  const provided = new TextEncoder().encode(signature.toLowerCase());
+  const expected = new TextEncoder().encode(
+    createHmac("md5", webhookSecret).update(body).digest("hex"),
+  );
+  return provided.length === expected.length &&
+    timingSafeEqual(provided, expected);
+}
+
 function refreshStatus() {
   const promises: Promise<void>[] = [];
 
@@ -234,11 +262,20 @@ setInterval(refreshStatus, 1000 * 60 * Math.max(1, refreshTime));
 refreshStatus();
 
 // Handle requests
-Deno.serve({ port }, (request: Request) => {
+Deno.serve({ port }, async (request: Request) => {
   const url = new URL(request.url);
-  const pledges = ["/on_create", "/on_update", "/on_delete"];
 
-  if (pledges.includes(url.pathname)) {
+  if (url.pathname === "/patreon_webhook") {
+    const body = new Uint8Array(await request.arrayBuffer());
+    const signature = request.headers.get("X-Patreon-Signature");
+
+    if (!verifyPatreonSignature(body, signature)) {
+      console.error(
+        "Rejected webhook: invalid or missing X-Patreon-Signature",
+      );
+      return new Response("Invalid signature", { status: 403 });
+    }
+
     // A pledge was created, updated or deleted
     if (!refreshTimeout) {
       refreshStatus();
